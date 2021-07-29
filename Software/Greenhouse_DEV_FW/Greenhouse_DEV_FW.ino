@@ -23,15 +23,24 @@
 #include "arduino_secrets.h"
 #include "thingProperties.h"
 #include <Arduino_MKRENV.h>
+#include <WiFiNINA.h>
+#include <utility/wifi_drv.h>
 
-#if defined(ESP32)
-static int const LED_BUILTIN = 2;
+#define DEBUG
+
+#ifdef DEBUG
+ #define DEBUG_PRINTLN(x)  Serial.println (x)
+ #define DEBUG_PRINT(x)  Serial.print(x)
+#else
+ #define DEBUG_PRINTLN(x)
+ #define DEBUG_PRINT(x)
 #endif
+
 
 void setup() {
   /* Initialize serial and wait up to 5 seconds for port to open */
   Serial.begin(9600);
-  for(unsigned long const serialBeginTime = millis(); !Serial && (millis() - serialBeginTime > 5000); ) { }
+  for (unsigned long const serialBeginTime = millis(); !Serial && (millis() - serialBeginTime > 5000);) {}
 
   if (!ENV.begin()) {
     Serial.println("Failed to initialize MKR ENV shield!");
@@ -40,7 +49,12 @@ void setup() {
   }
 
   /* Configure LED pin as an output */
-  pinMode(LED_BUILTIN, OUTPUT);
+  WiFiDrv::pinMode(25, OUTPUT);  //Green LED
+  WiFiDrv::pinMode(26, OUTPUT);  //Red LED
+  WiFiDrv::pinMode(27, OUTPUT);  //Blue LED
+  WiFiDrv::analogWrite(25, 0);   //GREEN
+  WiFiDrv::analogWrite(26, 0);   //RED
+  WiFiDrv::analogWrite(27, 0);   //BLUE
 
   /* This function takes care of connecting your sketch variables to the ArduinoIoTCloud object */
   initProperties();
@@ -52,18 +66,23 @@ void setup() {
   ArduinoCloud.printDebugInfo();
 }
 
+
+
+
 void loop() {
   ArduinoCloud.update();
-  temperature = ENV.readTemperature(FAHRENHEIT);
-  humidity = ENV.readHumidity();
-  pressure = ENV.readPressure(PSI);
-  illuminance = ENV.readIlluminance(FOOTCANDLE);
-  uva = ENV.readUVA();
-  uvb = ENV.readUVB();
-  uvIndex = ENV.readUVIndex();
-  printSensorSerial();
-  delay(1000);
+  readSensors();
+
+#ifdef DEBUG
+printSensorSerial();
+#endif
+
+delay(1000);
 }
+
+
+
+
 
 /*
  * 'onLedChange' is called when the "led" property of your Thing changes
@@ -71,17 +90,50 @@ void loop() {
 void onLedChange() {
   Serial.print("LED set to ");
   Serial.println(led);
-  digitalWrite(LED_BUILTIN, led);
+  if (led == 0) {
+    WiFiDrv::analogWrite(25, 0);  //GREEN
+    WiFiDrv::analogWrite(26, 0);  //RED
+    WiFiDrv::analogWrite(27, 0);  //BLUE
+  } else {
+    WiFiDrv::analogWrite(25, 0);    //GREEN
+    WiFiDrv::analogWrite(26, 255);  //RED
+    WiFiDrv::analogWrite(27, 0);    //BLUE
+  }
 }
 
 
+
+
 void printSensorSerial() {
-  Serial.print("Temperature (F): ");   Serial.println(temperature);
-  Serial.print("Humidity(%): ");   Serial.println(humidity);
-  Serial.print("Pressure (PSI): ");   Serial.println(pressure);
-  Serial.print("Illuminance (FC): ");   Serial.println(illuminance);
-  Serial.print("UVA:  ");   Serial.println(uva);
-  Serial.print("UVB: ");   Serial.println(uvb);
-  Serial.print("UV Index: ");   Serial.println(uvIndex);
+  Serial.print("Temperature (F): ");
+  Serial.println(temperature);
+  Serial.print("Humidity(%): ");
+  Serial.println(humidity);
+  Serial.print("Pressure (PSI): ");
+  Serial.println(pressure);
+  Serial.print("Illuminance (FC): ");
+  Serial.println(illuminance);
+  Serial.print("UVA:  ");
+  Serial.println(uva);
+  Serial.print("UVB: ");
+  Serial.println(uvb);
+  Serial.print("UV Index: ");
+  Serial.println(uvIndex);
+  Serial.print("LED Status: ");
+  Serial.println(led);
   Serial.println();
+}
+
+
+
+
+
+void readSensors() {
+  temperature = ENV.readTemperature(FAHRENHEIT);
+  humidity = ENV.readHumidity();
+  pressure = ENV.readPressure(PSI);
+  illuminance = ENV.readIlluminance(FOOTCANDLE);
+  uva = ENV.readUVA();
+  uvb = ENV.readUVB();
+  uvIndex = ENV.readUVIndex();
 }

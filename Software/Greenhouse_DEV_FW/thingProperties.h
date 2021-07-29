@@ -14,14 +14,14 @@
 
 void onLedChange();
 
-bool led;
-float temperature;
-float humidity;
-float pressure;
-float illuminance;
-float uva;
-float uvb;
-float uvIndex;
+bool led = false;
+float temperature = 0.0;
+float humidity = 0.0;
+float pressure = 0.0;
+float illuminance = 0.0;
+float uva = 0.0;
+float uvb = 0.0;
+float uvIndex = 0.0;
 
 void initProperties() {
 #if defined(BOARD_ESP8266)
