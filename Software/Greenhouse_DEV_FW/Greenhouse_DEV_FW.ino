@@ -82,11 +82,11 @@ void setup() {
   }
 
   /* Configure LED pin as an output */
-  WiFiDrv::pinMode(25, OUTPUT);  //Green LED
-  WiFiDrv::pinMode(26, OUTPUT);  //Red LED
-  WiFiDrv::pinMode(27, OUTPUT);  //Blue LED
-  WiFiDrv::analogWrite(25, 0);   //GREEN
-  WiFiDrv::analogWrite(26, 0);   //RED
+  WiFiDrv::pinMode(25, OUTPUT);  //RED LED
+  WiFiDrv::pinMode(26, OUTPUT);  //GREEN LED
+  WiFiDrv::pinMode(27, OUTPUT);  //BLUE LED
+  WiFiDrv::analogWrite(25, 0);   //RED
+  WiFiDrv::analogWrite(26, 0);   //GREEN
   WiFiDrv::analogWrite(27, 0);   //BLUE
 
   Serial.print(F("Snyder Greenhouse Environmental Control System (SG:ECS Version "));
