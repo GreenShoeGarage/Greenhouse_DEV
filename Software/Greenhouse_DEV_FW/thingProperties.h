@@ -12,9 +12,19 @@
 #define THING_ID "e4cf7b40-381d-483a-840d-c2db6290f6ce"
 #define BOARD_ID "e6eb1992-abe2-46a5-a17f-94ab742fe25c"
 
-void onManualControlChange();
+void onManualControlSwitchChange();
+void onFanSwitchChange();
+void onHeaterSwitchChange();
+void onLouverSwitchChange();
 
 bool MANUAL_CONTROL_ON = false;
+bool MANUAL_CONTROL_SWITCH_ON = false;
+bool FAN_ON = false;
+bool FAN_SWITCH_ON = false;
+bool HEATER_ON = false;
+bool HEATER_SWITCH_ON = false;
+bool LOUVER_OPEN = false;
+bool LOUVER_SWITCH_ON = false;
 float temperature = 0.0;
 float humidity = 0.0;
 float pressure = 0.0;
@@ -30,7 +40,10 @@ void initProperties() {
 #endif
   ArduinoCloud.setThingId(THING_ID);
 #if defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_NB)
-  ArduinoCloud.addProperty(MANUAL_CONTROL_ON, Permission::Write).onUpdate(onManualControlChange);
+  ArduinoCloud.addProperty(MANUAL_CONTROL_SWITCH_ON, Permission::Write).onUpdate(onManualControlSwitchChange);
+  ArduinoCloud.addProperty(FAN_SWITCH_ON, Permission::Write).onUpdate(onFanSwitchChange);
+  ArduinoCloud.addProperty(HEATER_SWITCH_ON, Permission::Write).onUpdate(onHeaterSwitchChange);
+  ArduinoCloud.addProperty(LOUVER_SWITCH_ON, Permission::Write).onUpdate(onLouverSwitchChange);
   ArduinoCloud.addProperty(temperature, Permission::Read).publishOnChange(10);
   ArduinoCloud.addProperty(humidity, Permission::Read).publishOnChange(10);
   ArduinoCloud.addProperty(pressure, Permission::Read).publishOnChange(10);
@@ -38,6 +51,13 @@ void initProperties() {
   ArduinoCloud.addProperty(uva, Permission::Read).publishOnChange(10);
   ArduinoCloud.addProperty(uvb, Permission::Read).publishOnChange(10);
   ArduinoCloud.addProperty(uvIndex, Permission::Read).publishOnChange(10);
+  ArduinoCloud.addProperty(HEATER_ON, Permission::Read).publishOnChange(10);
+  ArduinoCloud.addProperty(FAN_ON, Permission::Read).publishOnChange(10);
+  ArduinoCloud.addProperty(LOUVER_OPEN, Permission::Read).publishOnChange(10);
+#elif defined(BOARD_HAS_LORA)
+  ArduinoCloud.addProperty(led, 1, READWRITE, ON_CHANGE, onLedChange);
+  ArduinoCloud.addProperty(potentiometer, 2, READ, ON_CHANGE);
+  ArduinoCloud.addProperty(seconds, 3, READ, 5 * MINUTES);
 #endif
 }
 
