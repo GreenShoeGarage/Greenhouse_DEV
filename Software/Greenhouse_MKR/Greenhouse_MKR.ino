@@ -15,6 +15,8 @@
     - [ ]  Hydroponics water quality  (TBD)
     - [ ]  propane heater particulate matter (CO2 or TVOC) (???)
     - [ ]  Monitor position of LOUVERS
+    - [ ]  Battery status
+    - [ ]  Hydrostatic water level sensor
 
   Actuator Outputs
 
@@ -33,7 +35,7 @@
 
     - [ ]  Mobile App
     - [ ]  Web Browser
-  
+
 */
 
 #include "arduino_secrets.h"
@@ -42,6 +44,7 @@
 #include <Arduino_MKRENV.h>
 #include <WiFiNINA.h>
 #include <utility/wifi_drv.h>
+#include <openmvrpc.h>
 
 #define DEBUG
 #define PRINT_TELEMETRY_SERIAL
@@ -66,11 +69,21 @@ float avgPressure = 0.0;
 float avgIlluminance = 0.0;
 
 
+openmv::rpc_scratch_buffer<256> scratch_buffer;
+openmv::rpc_callback_buffer<8> callback_buffer;
+openmv::rpc_software_serial_uart_slave interface(2, 3, 19200);
+
+
 
 /*
- * 
- */
+
+*/
 void setup() {
+
+  interface.register_callback(F("serial_print"), serial_print_example);
+  // Startup the RPC interface and a debug channel.
+  interface.begin();
+  
   /* Initialize serial and wait up to 5 seconds for port to open */
   Serial.begin(115200);
   for (unsigned long const serialBeginTime = millis(); !Serial && (millis() - serialBeginTime > 8000);) {}
@@ -108,9 +121,10 @@ void setup() {
 
 
 /*
- * 
- */
+
+*/
 void loop() {
+  interface.loop();
   ArduinoCloud.update();
   readSensors();
   recordSensorData();
@@ -137,8 +151,8 @@ void loop() {
 
 
 /*
- * 
- */
+
+*/
 void readSensors() {
   temperature = ENV.readTemperature(FAHRENHEIT);
   humidity = ENV.readHumidity();
@@ -152,8 +166,8 @@ void readSensors() {
 
 
 /*
- * 
- */
+
+*/
 void recordSensorData() {
 
   if (SENSOR_READING_COUNTER > 9) {
@@ -171,8 +185,8 @@ void recordSensorData() {
 
 
 /*
- * 
- */
+
+*/
 void calculateAverageSensorReadings() {
   if (ENOUGH_SENSOR_READINGS_FOR_AVG == true) {
     for (int ctr = 0; ctr < NUM_SENSOR_READINGS_TO_STORE; ctr++) {
@@ -191,8 +205,8 @@ void calculateAverageSensorReadings() {
 
 
 /*
- * 
- */
+
+*/
 void printSensorSerial() {
   Serial.print(F("Temperature (F): "));
   Serial.println(temperature);
@@ -215,7 +229,7 @@ void printSensorSerial() {
   else {
     Serial.println(F("NO"));
   }
-  
+
   Serial.print(F("Fan On? "));
   Serial.println(FAN_ON);
   Serial.print(F("Heater On? "));
@@ -228,8 +242,8 @@ void printSensorSerial() {
 
 
 /*
- * 
- */
+
+*/
 void printAvgSensorSerial() {
   Serial.print(F("Avg. Temperature (F): "));
   Serial.println(avgTemperature);
@@ -245,21 +259,21 @@ void printAvgSensorSerial() {
 
 
 /*
- * 
- */
+
+*/
 void onManualControlSwitchChange() {
-  Serial.print(F("MANUAL CONTROL set to "));
+  DEBUG_PRINT(F("MANUAL CONTROL set to "));
   if (MANUAL_CONTROL_SWITCH_ON == false) {
     WiFiDrv::analogWrite(25, 0);  //RED
     WiFiDrv::analogWrite(26, 0);  //GREEN
     WiFiDrv::analogWrite(27, 0);  //BLUE
-    Serial.println(F("OFF."));
+    DEBUG_PRINTLN(F("OFF."));
     MANUAL_CONTROL_ON = false;
   } else {
     WiFiDrv::analogWrite(25, 0);    //RED
     WiFiDrv::analogWrite(26, 255);  //GREEN
     WiFiDrv::analogWrite(27, 0);    //BLUE
-    Serial.println(F("ON."));
+    DEBUG_PRINTLN(F("ON."));
     MANUAL_CONTROL_ON = true;
   }
 }
@@ -267,8 +281,8 @@ void onManualControlSwitchChange() {
 
 
 /*
- * 
- */
+
+*/
 void onFanSwitchChange() {
   if (MANUAL_CONTROL_ON) {
     if (FAN_SWITCH_ON) {
@@ -277,7 +291,7 @@ void onFanSwitchChange() {
     else {
       FAN_ON = false;
     }
-    DEBUG_PRINT("FAN ON: "); 
+    DEBUG_PRINT("FAN ON: ");
     DEBUG_PRINTLN(FAN_ON);
   }
 }
@@ -285,8 +299,8 @@ void onFanSwitchChange() {
 
 
 /*
- * 
- */
+
+*/
 void onHeaterSwitchChange() {
   if (MANUAL_CONTROL_ON) {
     if (HEATER_SWITCH_ON) {
@@ -296,7 +310,7 @@ void onHeaterSwitchChange() {
       HEATER_ON = false;
     }
 
-    DEBUG_PRINT("HEATER ON: "); 
+    DEBUG_PRINT("HEATER ON: ");
     DEBUG_PRINTLN(HEATER_ON);
   }
 }
@@ -304,8 +318,8 @@ void onHeaterSwitchChange() {
 
 
 /*
- * 
- */
+
+*/
 void onLouverSwitchChange() {
   if (MANUAL_CONTROL_ON) {
     if (LOUVER_SWITCH_ON) {
@@ -314,7 +328,7 @@ void onLouverSwitchChange() {
     else {
       LOUVER_OPEN = false;
     }
-    DEBUG_PRINT("LOUVER OPEN: "); 
+    DEBUG_PRINT("LOUVER OPEN: ");
     DEBUG_PRINTLN(LOUVER_OPEN);
 
   }
@@ -323,10 +337,26 @@ void onLouverSwitchChange() {
 
 
 /*
- * 
- */
+
+*/
 void engageAutomaticControlFunctions() {
   HEATER_ON = false;
   LOUVER_OPEN = false;
   FAN_ON = false;
+}
+
+
+
+/*
+
+*/
+void serial_print_example(void *in_data, size_t in_data_len) {
+  // Create the string on the stack (extra byte for the null terminator).
+  char buff[in_data_len + 1]; memset(buff, 0, in_data_len + 1);
+
+  // Copy what we received into our data type container.
+  memcpy(buff, in_data, in_data_len);
+
+  // Use it now.
+  DEBUG_PRINTLN(buff);
 }
