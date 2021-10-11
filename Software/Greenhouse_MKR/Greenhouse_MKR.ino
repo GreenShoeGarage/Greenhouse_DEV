@@ -37,7 +37,7 @@
 */
 
 #include "arduino_secrets.h"
-#include "thingProperties.h"
+#include "thing_properties.h"
 #include "system_settings.h"
 #include <Arduino_MKRENV.h>
 #include <WiFiNINA.h>
