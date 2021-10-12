@@ -10,8 +10,9 @@ uint32_t printNow { 0 };
 void send_battery_voltage()
 {
   auto vbat = Power.getVBat();
-  String str = "BATTERY_VOLTAGE,";
+  String str = "@BATTERY_VOLTAGE,";
   str += vbat;
+  str += "#";
   char buffer[str.length() + 1] {};
   str.toCharArray(buffer, sizeof(buffer));
   interface.call("serial_print", buffer, sizeof(buffer));
