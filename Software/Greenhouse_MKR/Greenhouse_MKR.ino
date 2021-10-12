@@ -1,7 +1,9 @@
 /*
   File:           Greenhouse_MKR.ino
   Date Last Mod:  2AUG2021
-  Description:    Proof-of-concept for a greenhouse monitoring device to be installed at Snyder Farm in Everett, PA
+  Description:    Proof-of-concept for a greenhouse monitoring device. This file contains
+                  the code for the MKR1010 expansion board to be used in conjunction with
+                  the Arduino Edge Control carrier board.
 
   Top Level Requirements:
 
@@ -12,17 +14,15 @@
     - [ ]  Duration of sunlight
         - [x]  Measure illuminance (FC)
     - [ ]  Soil pH  (TBD)
-    - [ ]  Hydroponics water quality  (TBD)
-    - [ ]  propane heater particulate matter (CO2 or TVOC) (???)
-    - [ ]  Monitor position of LOUVERS
-    - [ ]  Battery status
+    - [ ]  Turbidity sensor for water quality  (TBD)
+    - [x]  Battery status
     - [ ]  Hydrostatic water level sensor
 
   Actuator Outputs
 
-    - [ ]  Open/close LOUVERS
+    - [ ]  RElay to turn GROW LIGHTING on/off
     - [ ]  Relay to turn FAN on/off
-    - [ ]  Relay to turn HEATER on/off
+    - [ ]  Turn 3-WIRE WATER VALVE on/off
     - [x]  Onboard LED
 
   Communications
@@ -33,8 +33,8 @@
 
   UI / UX
 
-    - [ ]  Mobile App
-    - [ ]  Web Browser
+    - [x]  Mobile App
+    - [x]  Web Browser
 
 */
 
@@ -91,7 +91,6 @@ void setup() {
       ;
   }
 
-  /* Configure LED pin as an output */
   WiFiDrv::pinMode(25, OUTPUT);  //RED LED
   WiFiDrv::pinMode(26, OUTPUT);  //GREEN LED
   WiFiDrv::pinMode(27, OUTPUT);  //BLUE LED
@@ -99,9 +98,9 @@ void setup() {
   WiFiDrv::analogWrite(26, 0);   //GREEN
   WiFiDrv::analogWrite(27, 0);   //BLUE
 
-  DEBUG_PRINT(F("Snyder Greenhouse Environmental Control System (SG:ECS Version "));
+  DEBUG_PRINT(F("Greenhouse Environmental Control System (GECS Version "));
   DEBUG_PRINT(FW_VERSION_ID);
-  DEBUG_PRINTLN(F(") initializing..."));
+  DEBUG_PRINTLN(F(") - Expansion Board initializing..."));
 
   /* This function takes care of connecting your sketch variables to the ArduinoIoTCloud object */
   initProperties();
@@ -112,7 +111,7 @@ void setup() {
   setDebugMessageLevel(DBG_INFO);
   ArduinoCloud.printDebugInfo();
   delay(1000);
-  DEBUG_PRINT(F("Initialization complete.  System running...\n\n"));
+  DEBUG_PRINT(F("Expansion board initialization complete.  System running.\n\n"));
 }
 
 
