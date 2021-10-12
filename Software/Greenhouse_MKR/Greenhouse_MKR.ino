@@ -1,5 +1,5 @@
 /*
-  File:           Greenhouse_DEV_FW.ino
+  File:           Greenhouse_MKR.ino
   Date Last Mod:  2AUG2021
   Description:    Proof-of-concept for a greenhouse monitoring device to be installed at Snyder Farm in Everett, PA
 
@@ -71,7 +71,7 @@ float avgIlluminance = 0.0;
 
 openmv::rpc_scratch_buffer<256> scratch_buffer;
 openmv::rpc_callback_buffer<8> callback_buffer;
-openmv::rpc_software_serial_uart_slave interface(2, 3, 19200);
+openmv::rpc_i2c_slave interface(0x12);
 
 
 
@@ -81,15 +81,12 @@ openmv::rpc_software_serial_uart_slave interface(2, 3, 19200);
 void setup() {
 
   interface.register_callback(F("serial_print"), serial_print_example);
-  // Startup the RPC interface and a debug channel.
   interface.begin();
-  
-  /* Initialize serial and wait up to 5 seconds for port to open */
   Serial.begin(115200);
-  for (unsigned long const serialBeginTime = millis(); !Serial && (millis() - serialBeginTime > 8000);) {}
+  //for (unsigned long const serialBeginTime = millis(); !Serial && (millis() - serialBeginTime > 8000);) {}
 
   if (!ENV.begin()) {
-    Serial.println("Failed to initialize MKR ENV shield!");
+    DEBUG_PRINTLN(F("Failed to initialize MKR ENV shield!"));
     while (1)
       ;
   }
@@ -102,9 +99,9 @@ void setup() {
   WiFiDrv::analogWrite(26, 0);   //GREEN
   WiFiDrv::analogWrite(27, 0);   //BLUE
 
-  Serial.print(F("Snyder Greenhouse Environmental Control System (SG:ECS Version "));
-  Serial.print(FW_VERSION_ID);
-  Serial.println(F(") initializing..."));
+  DEBUG_PRINT(F("Snyder Greenhouse Environmental Control System (SG:ECS Version "));
+  DEBUG_PRINT(FW_VERSION_ID);
+  DEBUG_PRINTLN(F(") initializing..."));
 
   /* This function takes care of connecting your sketch variables to the ArduinoIoTCloud object */
   initProperties();
@@ -115,7 +112,7 @@ void setup() {
   setDebugMessageLevel(DBG_INFO);
   ArduinoCloud.printDebugInfo();
   delay(1000);
-  Serial.println(F("Initialization complete.  System running...\n\n"));
+  DEBUG_PRINT(F("Initialization complete.  System running...\n\n"));
 }
 
 
